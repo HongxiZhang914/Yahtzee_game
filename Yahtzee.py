@@ -8,6 +8,13 @@ pygame.init()
 screen = pygame.display.set_mode((800,600))
 font = pygame.font.SysFont("Arial",32)
 roll_button = pygame.Rect(300,450,100,50)
+#initialize rerolls and dice list
+reroll_dice_list = [False,False,False,False,False]
+reroll = 0
+Max_Reroll = 3
+dice_list = []
+for i in range(5):
+    dice_list.append(random.randint(1,6))
 
 #load dice images
 dice_1 = pygame.image.load('1.png')
@@ -19,8 +26,9 @@ dice_6 = pygame.image.load('6.png')
 dice_img_list = [dice_1,dice_2,dice_3,dice_4,dice_5,dice_6]
 
 #resize the images
+default_img_size = 70
 dice_img_list_resized =[]
-default_size = (70,70)
+default_size = (default_img_size,default_img_size)
 for img in dice_img_list:
     img = pygame.transform.scale(img, default_size)
     dice_img_list_resized.append(img)
@@ -28,10 +36,13 @@ default_img_x = 150
 default_img_y = 300
 
 #simulate rolling dice
-def roll_the_dice(number_of_dice):
-    dice_list = []
-    for i in range(number_of_dice):
-        dice_list.append(random.randint(1,6))
+def roll_the_dice():
+    global reroll
+    if reroll < Max_Reroll:
+        for i in range(0,5):
+            if not reroll_dice_list[i]:
+                dice_list[i] = random.randint(1,6)
+        reroll += 1
     return dice_list
 
 #used for testing    
@@ -136,6 +147,22 @@ def clear_screen():
     draw_button()
     draw_instructions()
 
+#make reroll choice by user, red rect when reroll is true, white rect when reroll is false
+def reroll_choice(pos):
+    x = default_img_x -default_img_size
+    y = default_img_y
+    for i in range(0,5):
+        x += default_img_size
+        checkbox = pygame.Rect(x,y,default_img_size,default_img_size)
+        x+=30
+        if checkbox.collidepoint(pos):
+            if reroll_dice_list[i] == True:
+                reroll_dice_list[i] = False
+                pygame.draw.rect(screen, (255,255,255), checkbox,2)
+            else:
+                reroll_dice_list[i] = True
+                pygame.draw.rect(screen, (255,0,0), checkbox,2)
+
 #Used to calculate how much score the player gets
 def judgement(dice):
     score = score_yahtzee(dice)+score_four_of_a_kind(dice)+score_three_of_a_kind(dice)+score_full_house(dice)+score_large_straight(dice)+score_small_straight(dice)
@@ -156,15 +183,16 @@ draw_instructions()
 #game loop
 while True:
     for event in pygame.event.get():
-        #event check for button press
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if roll_button.collidepoint(event.pos):
-                clear_screen()
-                dice_list = roll_the_dice(5)
-                draw_dice(dice_img_list_resized,dice_list)
-                judgement(dice_list)
         #exit the loop and the game
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        #event check for button press
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            reroll_choice(pygame.mouse.get_pos())
+            if roll_button.collidepoint(event.pos):
+                clear_screen()
+                dice_list = roll_the_dice()
+                draw_dice(dice_img_list_resized,dice_list)
+                judgement(dice_list)
     pygame.display.flip()
